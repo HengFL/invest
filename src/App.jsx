@@ -157,6 +157,15 @@ const parseNumber = (val) => {
   return isNaN(parsed) ? 0 : parsed;
 };
 
+const parsePercentChange = (val) => {
+  if (val === undefined || val === null || val === '') return null;
+  const strVal = String(val).trim();
+  if (!strVal) return null;
+  const cleanStr = strVal.replace('%', '');
+  const parsed = parseFloat(cleanStr);
+  return isNaN(parsed) ? null : parsed;
+};
+
 const calculateTargetAmount = (startDateStr, pricePerMonth) => {
   if (!startDateStr || !pricePerMonth) return 0;
   try {
@@ -1614,6 +1623,11 @@ function StockCard({ stock, index, onUpdateClick, exchangeRate, showAmounts }) {
             ) : (
               <span className="text-muted" style={{ fontWeight: 400, fontSize: '0.85rem' }}>{stock["ชื่อบริษัท"]}</span>
             )}
+            {stock.port && (
+              <span className="highlight-tag" style={{ fontSize: '0.7rem', padding: '0.2rem 0.6rem', borderRadius: '20px', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
+                {stock.port}
+              </span>
+            )}
             {stock["หลักชะรีอะฮ์"] && (
               <a 
                 href={stock["Musaffa"] || '#'} 
@@ -1803,6 +1817,29 @@ function StockCard({ stock, index, onUpdateClick, exchangeRate, showAmounts }) {
             <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>
               (≈ ฿{(parseNumber(stock["ราคาหุ้น ($)"]) * exchangeRate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
             </span>
+            {(() => {
+              const changeVal = parsePercentChange(
+                stock["เปลี่ยนแปลง (%)"] || 
+                stock["changePercent"] || 
+                stock["เปลี่ยนแปลงราคา (%)"] || 
+                stock["เปอร์เซ็นต์การเปลี่ยนแปลง"] ||
+                stock["% เปลี่ยนแปลง"]
+              );
+              if (changeVal === null) return null;
+              const isPositive = changeVal > 0;
+              const isNegative = changeVal < 0;
+              const icon = isPositive ? 'fa-caret-up' : isNegative ? 'fa-caret-down' : '';
+              return (
+                <span 
+                  className={`price-change-badge ${isPositive ? 'positive' : isNegative ? 'negative' : 'neutral'}`}
+                  style={{ marginLeft: '0.375rem' }}
+                  title="เปอร์เซ็นต์การเปลี่ยนแปลงวันนี้"
+                >
+                  {icon && <i className={`fa-solid ${icon}`} style={{ fontSize: '0.7rem' }}></i>}
+                  {isPositive ? '+' : ''}{changeVal.toFixed(2)}%
+                </span>
+              );
+            })()}
           </div>
         </div>
       </div>
@@ -2299,29 +2336,187 @@ function UpdateModal({ stock, exchangeRate = 36.5, onClose, onUpdateSuccess }) {
                   </div>
                 </a>
                 <div>
-                  <h3 className="modal-title">
-                    อัปเดต{' '}
+                  <h3 className="modal-title" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', margin: 0 }}>
                     <a 
                       href={stock["TradingView"]} 
                       target="_blank" 
                       rel="noopener noreferrer" 
-                      title="คลิกเพื่อดูกราฟ"
+                      title="ดูใน TradingView"
                       style={{ textDecoration: 'none', color: 'inherit', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                      className="hover-opacity"
+                      className="ticker-link hover-opacity"
                     >
-                      <span>{stock["ชื่อหุ้น"]}</span>
-                      <i className="fa-solid fa-arrow-up-right-from-square" style={{ fontSize: '10px', opacity: 0.65 }}></i>
+                      <span style={{ fontWeight: 700 }}>{stock["ชื่อหุ้น"]}</span>
                     </a>
+                    {stock["เว็บไซต์"] ? (
+                      <a 
+                        href={stock["เว็บไซต์"]} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        title={`ไปที่เว็บไซต์ของ ${stock["ชื่อบริษัท"]}`}
+                        style={{ textDecoration: 'none', color: 'inherit', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                        className="hover-opacity text-muted"
+                      >
+                        <span style={{ fontWeight: 400, fontSize: '0.85rem' }}>{stock["ชื่อบริษัท"]}</span>
+                      </a>
+                    ) : (
+                      <span className="text-muted" style={{ fontWeight: 400, fontSize: '0.85rem' }}>{stock["ชื่อบริษัท"]}</span>
+                    )}
+                    {stock.port && (
+                      <span className="highlight-tag" style={{ fontSize: '0.7rem', padding: '0.2rem 0.6rem', borderRadius: '20px', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
+                        {stock.port}
+                      </span>
+                    )}
+                    {stock["ลำดับการซื้อ"] && <span className="order-tag">ลำดับที่ {stock["ลำดับการซื้อ"]}</span>}
                   </h3>
-                  <p className="modal-subtitle">{stock["ชื่อบริษัท"]} • พอร์ต: <span className="highlight-tag">{stock.port}</span></p>
+                  <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <span className={`market-tag ${
+                      stock["ตลาด"] === 'NYSE' ? 'market-tag-nyse' :
+                      stock["ตลาด"] === 'NASDAQ' ? 'market-tag-nasdaq' : ''
+                    }`}>{stock["ตลาด"]}</span>
+                    {(() => {
+                      const typeVal = stock["หมวดธุรกิจ"];
+                      if (!typeVal) return null;
+                      
+                      const sectorMap = {
+                        'เทคโนโลยีอิเลคทรอนิกส์': 'electronic-technology',
+                        'บริการทางด้านเทคโนโลยี': 'technology-services',
+                        'เทคโนโลยีเกี่ยวกับสุขภาพ': 'health-technology',
+                        'การค้าปลีก': 'retail-trade',
+                        'การผลิตของผู้ผลิต': 'producer-manufacturing',
+                        'บริการการกระจายสินค้า': 'distribution-services',
+                        'สินค้าอุปโภคที่ไม่คงทนถาวร': 'consumer-non-durables',
+                        'สินค้าอุปโภคคงทนถาวร': 'consumer-durables',
+                        'อุตสาหกรรมเชิงกระบวนการ': 'process-industries',
+                        'บริการเกี่ยวกับอุตสาหกรรม': 'commercial-services',
+                        'บริการพาณิชยกรรม': 'commercial-services',
+                        'แร่พลังงาน': 'energy-minerals',
+                        'การเงิน': 'finance',
+                        'สาธารณูปโภค': 'utilities',
+                        'การขนส่ง': 'transportation',
+                        'บริการสำหรับผู้บริโภค': 'consumer-services',
+                        'บริการเกี่ยวกับสุขภาพ': 'health-services',
+                        'แร่ที่ไม่ใช่พลังงาน': 'non-energy-minerals',
+                        'การสื่อสาร': 'communications'
+                      };
+                      
+                      const slug = sectorMap[typeVal.trim()];
+                      if (slug) {
+                        const url = `https://th.tradingview.com/markets/stocks-usa/sectorandindustry-sector/${slug}/`;
+                        return (
+                          <a 
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title={`ดูหมวดหมู่ ${typeVal} ใน TradingView`}
+                            style={{ textDecoration: 'none', color: 'inherit' }}
+                            className="hover-opacity"
+                          >
+                            <span className="text-muted" style={{ fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                              {typeVal}
+                            </span>
+                          </a>
+                        );
+                      }
+                      
+                      return <span className="text-muted" style={{ fontSize: '0.85rem' }}>{typeVal}</span>;
+                    })()}
+                    {stock["อุตสาหกรรม"] && <span className="text-muted" style={{ opacity: 0.4, fontSize: '0.85rem' }}>/</span>}
+                    {(() => {
+                      const indVal = stock["อุตสาหกรรม"];
+                      if (!indVal) return null;
+                      
+                      const industryMap = {
+                        'เซมิคอนดักเตอร์': 'semiconductors',
+                        'ยารายใหญ่': 'pharmaceuticals-major',
+                        'ชุดซอฟต์แวร์สำเร็จรูป': 'packaged-software',
+                        'อุปกรณ์โทรคมนาคม': 'telecommunications-equipment',
+                        'เครื่องจักรอุตสาหกรรม': 'industrial-machinery',
+                        'การดูแลครัวเรือน/บุคคล': 'household-personal-care',
+                        'เครือข่ายการพัฒนาปรับปรุงบ้าน': 'home-improvement-chains',
+                        'เคมีพิเศษเฉพาะ': 'chemicals-specialty',
+                        'อุปกรณ์ต่อพ่วงคอมพิวเตอร์': 'computer-peripherals',
+                        'เชี่ยวชาญพิเศษด้านการแพทย์': 'medical-specialties',
+                        'ชิ้นส่วนอิเลคทรอนิกส์': 'electronic-components',
+                        'ค้าปลีกเกี่ยวกับเสื้อผ้า/รองเท้า': 'apparel-footwear-retail',
+                        'เครื่องใช้ไฟฟ้า': 'electrical-products',
+                        'วิศวกรรมและก่อสร้าง': 'engineering-construction',
+                        'ผู้จัดจำหน่ายทางการแพทย์': 'medical-distributors',
+                        'บริการด้านสิ่งแวดล้อม': 'environmental-services',
+                        'เชี่ยวชาญพิเศษด้านอุตสาหกรรม': 'industrial-specialties',
+                        'ผู้จัดจำหน่ายค้าส่ง': 'wholesale-distributors',
+                        'ร้านค้าพิเศษเฉพาะ': 'specialty-stores',
+                        'บริการด้านเทคโนโลยีสารสนเทศ': 'information-technology-services',
+                        'บริการน้ำมันแบบครบวงจร': 'integrated-oil',
+                        'การผลิตน้ำมันและก๊าซ': 'oil-gas-production',
+                        'สินค้าโภคภัณฑ์/เครื่องจักรทางการเกษตร': 'agricultural-commodities-milling',
+                        'การกลั่นน้ำมันและการตลาดเกี่ยวกับน้ำมัน': 'oil-refining-marketing',
+                        'ไบโอเทคโนโลยี': 'biotechnology'
+                      };
+                      
+                      const slug = industryMap[indVal.trim()];
+                      if (slug) {
+                        const url = `https://th.tradingview.com/markets/stocks-usa/sectorandindustry-industry/${slug}/`;
+                        return (
+                          <a 
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title={`ดูอุตสาหกรรม ${indVal} ใน TradingView`}
+                            style={{ textDecoration: 'none', color: 'inherit' }}
+                            className="hover-opacity"
+                          >
+                            <span className="text-muted" style={{ fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                              {indVal}
+                            </span>
+                          </a>
+                        );
+                      }
+                      
+                      return <span className="text-muted" style={{ fontSize: '0.85rem' }}>{indVal}</span>;
+                    })()}
+                  </div>
                 </div>
               </div>
               
-              <div style={{ marginLeft: 'auto', marginRight: '0.875rem', textAlign: 'right' }}>
-                <span style={{ display: 'block', fontSize: '0.675rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.025em', lineHeight: 1.2 }}>ราคาหุ้น</span>
-                <span style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-main)', lineHeight: 1.2 }}>
-                  ${(parseFloat(stock["ราคาหุ้น ($)"]) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </span>
+              <div style={{ marginLeft: 'auto', marginRight: '0.875rem', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.125rem' }}>
+                {stock["มูลค่าตลาด ($)"] && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', lineHeight: 1 }}>
+                    <span style={{ fontSize: '0.675rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.025em' }}>มูลค่าตลาด</span>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)' }}>
+                      {formatCurrency(parseNumber(stock["มูลค่าตลาด ($)"]))}
+                    </span>
+                  </div>
+                )}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                  <span style={{ fontSize: '0.725rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.025em' }}>ราคาหุ้น</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', lineHeight: 1.2 }}>
+                    <span style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-main)' }}>
+                      ${(parseFloat(stock["ราคาหุ้น ($)"]) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                    {(() => {
+                      const changeVal = parsePercentChange(
+                        stock["เปลี่ยนแปลง (%)"] || 
+                        stock["changePercent"] || 
+                        stock["เปลี่ยนแปลงราคา (%)"] || 
+                        stock["เปอร์เซ็นต์การเปลี่ยนแปลง"] ||
+                        stock["% เปลี่ยนแปลง"]
+                      );
+                      if (changeVal === null) return null;
+                      const isPositive = changeVal > 0;
+                      const isNegative = changeVal < 0;
+                      const icon = isPositive ? 'fa-caret-up' : isNegative ? 'fa-caret-down' : '';
+                      return (
+                        <span 
+                          className={`price-change-badge ${isPositive ? 'positive' : isNegative ? 'negative' : 'neutral'}`}
+                          title="เปอร์เซ็นต์การเปลี่ยนแปลงราคาหุ้น"
+                        >
+                          {icon && <i className={`fa-solid ${icon}`} style={{ fontSize: '0.7rem' }}></i>}
+                          {isPositive ? '+' : ''}{changeVal.toFixed(2)}%
+                        </span>
+                      );
+                    })()}
+                  </div>
+                </div>
               </div>
 
               <button type="button" className="modal-close-btn" onClick={onClose}>

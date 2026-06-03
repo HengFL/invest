@@ -1198,6 +1198,37 @@ h1 {
   border: 1px solid rgba(37, 99, 235, 0.2);
 }
 
+/* Price Change Badges */
+.price-change-badge {
+  padding: 0.2rem 0.6rem;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  transition: all 0.2s ease;
+  align-self: center;
+}
+
+.price-change-badge.positive {
+  background: transparent;
+  color: var(--success);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.price-change-badge.negative {
+  background: transparent;
+  color: var(--error);
+  border: 1px solid rgba(244, 63, 94, 0.2);
+}
+
+.price-change-badge.neutral {
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid rgba(100, 116, 139, 0.2);
+}
+
 /* Value Specific Helper Colors */
 .color-grey {
   color: #94a3b8 !important;
