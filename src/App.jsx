@@ -7,6 +7,35 @@ import Select from 'react-select';
 const API_URL = 'https://script.google.com/macros/s/AKfycbwkjycorGKU-NDKVxETVhEC_BiKHhSuuUhMX4uZhDTIYi5KuoPjtIu5FzwE3Ahhc1HZ/exec';
 const UPDATE_API_URL = 'https://script.google.com/macros/s/AKfycbzNnoWQyuqBNn2y1kNq3ecRc8bTx_DeU5GmCCgF7y5ER3TOFZmiTWXnr_unNg6unYzS/exec';
 
+const GLOBAL_TOP_100 = {
+  "NVDA": 1, "AAPL": 2, "GOOG": 3, "GOOGL": 3, "MSFT": 4, "AMZN": 5, "TSM": 6, "AVGO": 7, "2222.SR": 8, "TSLA": 9,
+  "005930.KS": 10, "META": 11, "MU": 12, "000660.KS": 13, "BRK.B": 14, "BRK-B": 14, "BRK/B": 14, "BRK.A": 14, "BRK-A": 14, "LLY": 15,
+  "WMT": 16, "AMD": 17, "JPM": 18, "ORCL": 19, "ASML": 20, "XOM": 21, "V": 22, "TCEHY": 23, "INTC": 24, "JNJ": 25,
+  "CSCO": 26, "ARM": 27, "COST": 28, "MA": 29, "CAT": 30, "LRCX": 31, "AMAT": 32, "601939.SS": 33, "ABBV": 34, "CVX": 35,
+  "BAC": 36, "PLTR": 37, "NFLX": 38, "UNH": 39, "MS": 40, "KO": 41, "GE": 42, "601288.SS": 43, "PG": 44, "HSBC": 45,
+  "RO.SW": 46, "GS": 47, "BABA": 48, "HD": 49, "IBM": 50, "1398.HK": 51, "9984.T": 52, "300750.SZ": 53, "MRK": 54,
+  "601988.SS": 55, "DELL": 56, "TXN": 57, "AZN": 58, "NVS": 59, "MC.PA": 60, "PM": 61, "KLAC": 62, "285A.T": 63,
+  "RY": 64, "GEV": 65, "NESN.SW": 66, "MRVL": 67, "SNDK": 68, "QCOM": 69, "0857.HK": 70, "SIE.DE": 71, "WFC": 72,
+  "SHEL": 73, "PANW": 74, "601138.SS": 75, "600519.SS": 76, "BHP": 77, "0941.HK": 78, "TM": 79, "RTX": 80,
+  "OR.PA": 81, "IHC.AE": 82, "2454.TW": 83, "LIN": 84, "SAP": 85, "C": 86, "ANET": 87, "MUFG": 88, "AXP": 89,
+  "PRX.AS": 90, "300308.SZ": 91, "STX": 92, "ADI": 93, "TMUS": 94, "APP": 95, "2308.TW": 96, "ITX.MC": 97,
+  "VZ": 98, "TTE": 99, "CBA.AX": 100
+};
+
+const getGlobalRank = (symbol) => {
+  if (!symbol) return null;
+  const cleanSymbol = symbol.trim().toUpperCase();
+  if (GLOBAL_TOP_100[cleanSymbol]) {
+    return GLOBAL_TOP_100[cleanSymbol];
+  }
+  // Try fallback by stripping suffixes
+  const base = cleanSymbol.split('.')[0].split('-')[0].split('/')[0];
+  if (GLOBAL_TOP_100[base]) {
+    return GLOBAL_TOP_100[base];
+  }
+  return null;
+};
+
 const parseDate = (dateStr) => {
   if (!dateStr) return null;
   if (dateStr instanceof Date) return dateStr;
@@ -1804,11 +1833,24 @@ function StockCard({ stock, index, onUpdateClick, exchangeRate, showAmounts }) {
           
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.375rem', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
             {stock["มูลค่าตลาด ($)"] && (
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.375rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
                 <span className="detail-label">มูลค่าตลาด</span>
                 <span style={{ color: 'var(--text-main)', fontWeight: 700, fontSize: '0.95rem' }}>
                   {formatCurrency(parseNumber(stock["มูลค่าตลาด ($)"]))}
                 </span>
+                {(() => {
+                  const rank = getGlobalRank(stock["ชื่อหุ้น"]);
+                  if (!rank) return null;
+                  return (
+                    <span 
+                      className="global-rank-tag" 
+                      title={`อันดับที่ ${rank} ของโลกโดยมูลค่าตลาด`}
+                    >
+                      <i className="fa-solid fa-earth-americas"></i>
+                      อันดับ {rank}
+                    </span>
+                  );
+                })()}
               </div>
             )}
             {stock["มูลค่าตลาด ($)"] && <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>•</span>}
@@ -2480,16 +2522,29 @@ function UpdateModal({ stock, exchangeRate = 36.5, onClose, onUpdateSuccess }) {
               
               <div style={{ marginLeft: 'auto', marginRight: '0.875rem', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.125rem' }}>
                 {stock["มูลค่าตลาด ($)"] && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', lineHeight: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
                     <span style={{ fontSize: '0.675rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.025em' }}>มูลค่าตลาด</span>
                     <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)' }}>
                       {formatCurrency(parseNumber(stock["มูลค่าตลาด ($)"]))}
                     </span>
+                    {(() => {
+                      const rank = getGlobalRank(stock["ชื่อหุ้น"]);
+                      if (!rank) return null;
+                      return (
+                        <span 
+                          className="global-rank-tag" 
+                          title={`อันดับที่ ${rank} ของโลกโดยมูลค่าตลาด`}
+                        >
+                          <i className="fa-solid fa-earth-americas"></i>
+                          อันดับ {rank}
+                        </span>
+                      );
+                    })()}
                   </div>
                 )}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
                   <span style={{ fontSize: '0.725rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.025em' }}>ราคาหุ้น</span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', lineHeight: 1.2 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
                     <span style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-main)' }}>
                       ${(parseFloat(stock["ราคาหุ้น ($)"]) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </span>
