@@ -1456,9 +1456,26 @@ function StockCard({ stock, index, onUpdateClick, exchangeRate, showAmounts }) {
       displayValue = shouldHide ? maskFormattedMoney(formatted) : formatted;
     }
 
+    const iconMap = {
+      'ราคาตั้งซื้อ': <i className="fa-solid fa-bullseye" style={{ color: '#3b82f6', fontSize: '0.75rem' }}></i>,
+      'ยอดตั้งซื้อ': <i className="fa-solid fa-bars-progress" style={{ color: '#f59e0b', fontSize: '0.75rem' }}></i>,
+      'ยอดตั้งกำจัด': <i className="fa-solid fa-filter" style={{ color: '#06b6d4', fontSize: '0.75rem' }}></i>,
+      'ยอดซื้อ': <i className="fa-solid fa-cart-shopping" style={{ color: '#6366f1', fontSize: '0.75rem' }}></i>,
+      'ยอดขาย': <i className="fa-solid fa-hand-holding-dollar" style={{ color: '#10b981', fontSize: '0.75rem' }}></i>,
+      'ยอดปันผล': <i className="fa-solid fa-coins" style={{ color: '#eab308', fontSize: '0.75rem' }}></i>,
+      'ยอดภาษี': <i className="fa-solid fa-file-invoice-dollar" style={{ color: '#f43f5e', fontSize: '0.75rem' }}></i>,
+      'ยอดกำจัด': <i className="fa-solid fa-scissors" style={{ color: '#f97316', fontSize: '0.75rem' }}></i>,
+      'กำไรขาย': <i className="fa-solid fa-arrow-trend-up" style={{ color: '#14b8a6', fontSize: '0.75rem' }}></i>,
+      'กำไรรวม': <i className="fa-solid fa-chart-line" style={{ color: '#059669', fontSize: '0.75rem' }}></i>,
+      'กำไรสุทธิ': <i className="fa-solid fa-wallet" style={{ color: '#ec4899', fontSize: '0.75rem' }}></i>
+    };
+
     return (
       <div className={`detail-item ${colorClass}`}>
-        <span className="detail-label">{label}</span>
+        <span className="detail-label" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+          {iconMap[label]}
+          <span>{label}</span>
+        </span>
         <span className={`detail-value ${colorClass.startsWith('color-') ? colorClass : ''}`}>
           {displayValue}
           {relativeTime && <span className="relative-time">{relativeTime}</span>}
@@ -2315,40 +2332,58 @@ function UpdateModal({ stock, exchangeRate = 36.5, onClose, onUpdateSuccess }) {
             <div className="modal-body">
               <div className="target-summary-ref" style={{ flexWrap: 'wrap', gap: '0.75rem 0.5rem' }}>
                 <div className="target-ref-card" style={{ minWidth: '100px', flex: '1 1 0' }}>
-                  <span className="target-ref-label">ราคาตั้งซื้อ</span>
+                  <span className="target-ref-label" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                    <i className="fa-solid fa-bullseye" style={{ color: '#3b82f6', fontSize: '0.75rem' }}></i>
+                    <span>ราคาตั้งซื้อ</span>
+                  </span>
                   <span className={`target-ref-value ${targetPrice === 0 ? 'text-grey' : ''}`} style={{ fontSize: '1rem' }}>${targetPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                 </div>
                 <div className="target-summary-divider" style={{ margin: '0 0.5rem' }}></div>
                 <div className="target-ref-card" style={{ minWidth: '100px', flex: '1 1 0' }}>
-                  <span className="target-ref-label">ยอดตั้งซื้อ</span>
+                  <span className="target-ref-label" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                    <i className="fa-solid fa-bars-progress" style={{ color: '#f59e0b', fontSize: '0.75rem' }}></i>
+                    <span>ยอดตั้งซื้อ</span>
+                  </span>
                   <span className={`target-ref-value ${remainingTarget === 0 ? 'text-grey' : ''}`} style={{ fontSize: '1rem' }}>
                     ${remainingTarget.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                   </span>
                 </div>
                 <div className="target-summary-divider" style={{ margin: '0 0.5rem' }}></div>
                 <div className="target-ref-card" style={{ minWidth: '100px', flex: '1 1 0' }}>
-                  <span className="target-ref-label">ยอดตั้งกำจัด</span>
+                  <span className="target-ref-label" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                    <i className="fa-solid fa-filter" style={{ color: '#06b6d4', fontSize: '0.75rem' }}></i>
+                    <span>ยอดตั้งกำจัด</span>
+                  </span>
                   <span className={`target-ref-value ${currentTargetClearAmount === 0 ? 'text-grey' : ''}`} style={{ fontSize: '1rem' }}>
                     ${currentTargetClearAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                   </span>
                 </div>
                 <div className="target-summary-divider" style={{ margin: '0 0.5rem' }}></div>
                 <div className="target-ref-card" style={{ minWidth: '100px', flex: '1 1 0' }}>
-                  <span className="target-ref-label">กำไรขาย</span>
+                  <span className="target-ref-label" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                    <i className="fa-solid fa-arrow-trend-up" style={{ color: '#14b8a6', fontSize: '0.75rem' }}></i>
+                    <span>กำไรขาย</span>
+                  </span>
                   <span className={`target-ref-value ${currentTotalProfit > 0 ? 'text-green' : currentTotalProfit < 0 ? 'text-red' : 'text-grey'}`} style={{ fontSize: '1rem' }}>
                     ${currentTotalProfit.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                   </span>
                 </div>
                 <div className="target-summary-divider" style={{ margin: '0 0.5rem' }}></div>
                 <div className="target-ref-card" style={{ minWidth: '100px', flex: '1 1 0' }}>
-                  <span className="target-ref-label">กำไรรวม</span>
+                  <span className="target-ref-label" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                    <i className="fa-solid fa-chart-line" style={{ color: '#059669', fontSize: '0.75rem' }}></i>
+                    <span>กำไรรวม</span>
+                  </span>
                   <span className={`target-ref-value ${currentGrossProfit > 0 ? 'text-green' : currentGrossProfit < 0 ? 'text-red' : 'text-grey'}`} style={{ fontSize: '1rem' }}>
                     ${currentGrossProfit.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                   </span>
                 </div>
                 <div className="target-summary-divider" style={{ margin: '0 0.5rem' }}></div>
                 <div className="target-ref-card" style={{ minWidth: '100px', flex: '1 1 0' }}>
-                  <span className="target-ref-label">กำไรสุทธิ</span>
+                  <span className="target-ref-label" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                    <i className="fa-solid fa-wallet" style={{ color: '#ec4899', fontSize: '0.75rem' }}></i>
+                    <span>กำไรสุทธิ</span>
+                  </span>
                   <span className={`target-ref-value ${currentNetIncome > 0 ? 'text-green' : currentNetIncome < 0 ? 'text-red' : 'text-grey'}`} style={{ fontSize: '1rem' }}>
                     ${currentNetIncome.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                   </span>
