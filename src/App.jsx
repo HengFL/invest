@@ -2524,7 +2524,7 @@ function UpdateModal({ stock, exchangeRate = 36.5, onClose, onUpdateSuccess }) {
                 {stock["มูลค่าตลาด ($)"] && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
                     <span style={{ fontSize: '0.675rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.025em' }}>มูลค่าตลาด</span>
-                    <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)' }}>
+                    <span style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)' }}>
                       {formatCurrency(parseNumber(stock["มูลค่าตลาด ($)"]))}
                     </span>
                     {(() => {
@@ -2545,7 +2545,7 @@ function UpdateModal({ stock, exchangeRate = 36.5, onClose, onUpdateSuccess }) {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
                   <span style={{ fontSize: '0.725rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.025em' }}>ราคาหุ้น</span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-                    <span style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-main)' }}>
+                    <span style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)' }}>
                       ${(parseFloat(stock["ราคาหุ้น ($)"]) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </span>
                     {(() => {

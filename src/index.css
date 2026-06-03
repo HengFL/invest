@@ -1667,8 +1667,8 @@ h1 {
 /* Global Rank Tag for World's Top 100 Companies */
 .global-rank-tag {
   background: transparent;
-  color: #b45309;
-  border: 1px solid rgba(245, 158, 11, 0.25);
+  color: #f97316;
+  border: 1px solid rgba(249, 115, 22, 0.3);
   padding: 0.2rem 0.6rem;
   border-radius: 20px;
   font-size: 0.7rem;
@@ -1676,14 +1676,6 @@ h1 {
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  cursor: default;
-}
-
-.global-rank-tag:hover {
-  background: rgba(245, 158, 11, 0.05);
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.1);
 }
 
 .global-rank-tag i {
