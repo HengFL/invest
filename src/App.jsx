@@ -7,34 +7,8 @@ import Select from 'react-select';
 const API_URL = 'https://script.google.com/macros/s/AKfycbwkjycorGKU-NDKVxETVhEC_BiKHhSuuUhMX4uZhDTIYi5KuoPjtIu5FzwE3Ahhc1HZ/exec';
 const UPDATE_API_URL = 'https://script.google.com/macros/s/AKfycbzNnoWQyuqBNn2y1kNq3ecRc8bTx_DeU5GmCCgF7y5ER3TOFZmiTWXnr_unNg6unYzS/exec';
 
-const GLOBAL_TOP_100 = {
-  "NVDA": 1, "AAPL": 2, "GOOG": 3, "GOOGL": 3, "MSFT": 4, "AMZN": 5, "TSM": 6, "AVGO": 7, "2222.SR": 8, "TSLA": 9,
-  "005930.KS": 10, "META": 11, "MU": 12, "000660.KS": 13, "BRK.B": 14, "BRK-B": 14, "BRK/B": 14, "BRK.A": 14, "BRK-A": 14, "LLY": 15,
-  "WMT": 16, "AMD": 17, "JPM": 18, "ORCL": 19, "ASML": 20, "XOM": 21, "V": 22, "TCEHY": 23, "INTC": 24, "JNJ": 25,
-  "CSCO": 26, "ARM": 27, "COST": 28, "MA": 29, "CAT": 30, "LRCX": 31, "AMAT": 32, "601939.SS": 33, "ABBV": 34, "CVX": 35,
-  "BAC": 36, "PLTR": 37, "NFLX": 38, "UNH": 39, "MS": 40, "KO": 41, "GE": 42, "601288.SS": 43, "PG": 44, "HSBC": 45,
-  "RO.SW": 46, "GS": 47, "BABA": 48, "HD": 49, "IBM": 50, "1398.HK": 51, "9984.T": 52, "300750.SZ": 53, "MRK": 54,
-  "601988.SS": 55, "DELL": 56, "TXN": 57, "AZN": 58, "NVS": 59, "MC.PA": 60, "PM": 61, "KLAC": 62, "285A.T": 63,
-  "RY": 64, "GEV": 65, "NESN.SW": 66, "MRVL": 67, "SNDK": 68, "QCOM": 69, "0857.HK": 70, "SIE.DE": 71, "WFC": 72,
-  "SHEL": 73, "PANW": 74, "601138.SS": 75, "600519.SS": 76, "BHP": 77, "0941.HK": 78, "TM": 79, "RTX": 80,
-  "OR.PA": 81, "IHC.AE": 82, "2454.TW": 83, "LIN": 84, "SAP": 85, "C": 86, "ANET": 87, "MUFG": 88, "AXP": 89,
-  "PRX.AS": 90, "300308.SZ": 91, "STX": 92, "ADI": 93, "TMUS": 94, "APP": 95, "2308.TW": 96, "ITX.MC": 97,
-  "VZ": 98, "TTE": 99, "CBA.AX": 100
-};
 
-const getGlobalRank = (symbol) => {
-  if (!symbol) return null;
-  const cleanSymbol = symbol.trim().toUpperCase();
-  if (GLOBAL_TOP_100[cleanSymbol]) {
-    return GLOBAL_TOP_100[cleanSymbol];
-  }
-  // Try fallback by stripping suffixes
-  const base = cleanSymbol.split('.')[0].split('-')[0].split('/')[0];
-  if (GLOBAL_TOP_100[base]) {
-    return GLOBAL_TOP_100[base];
-  }
-  return null;
-};
+
 
 const parseDate = (dateStr) => {
   if (!dateStr) return null;
@@ -1518,8 +1492,8 @@ function StockCard({ stock, index, onUpdateClick, exchangeRate, showAmounts }) {
     return (
       <div className={`detail-item ${colorClass}`}>
         <span className="detail-label" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
-          {iconMap[label]}
           <span>{label}</span>
+          {iconMap[label]}
         </span>
         <span className={`detail-value ${colorClass.startsWith('color-') ? colorClass : ''}`}>
           {displayValue}
@@ -1845,19 +1819,7 @@ function StockCard({ stock, index, onUpdateClick, exchangeRate, showAmounts }) {
                 <span style={{ color: 'var(--text-main)', fontWeight: 700, fontSize: '0.95rem' }}>
                   {formatCurrency(parseNumber(stock["มูลค่าตลาด ($)"]))}
                 </span>
-                {(() => {
-                  const rank = getGlobalRank(stock["ชื่อหุ้น"]);
-                  if (!rank) return null;
-                  return (
-                    <span 
-                      className="global-rank-tag" 
-                      title={`อันดับที่ ${rank} ของโลกโดยมูลค่าตลาด`}
-                    >
-                      <i className="fa-solid fa-earth-americas"></i>
-                      อันดับ {rank}
-                    </span>
-                  );
-                })()}
+
               </div>
             )}
             {stock["มูลค่าตลาด ($)"] && <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>•</span>}
@@ -2536,19 +2498,7 @@ function UpdateModal({ stock, exchangeRate = 36.5, onClose, onUpdateSuccess }) {
                     <span style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)' }}>
                       {formatCurrency(parseNumber(stock["มูลค่าตลาด ($)"]))}
                     </span>
-                    {(() => {
-                      const rank = getGlobalRank(stock["ชื่อหุ้น"]);
-                      if (!rank) return null;
-                      return (
-                        <span 
-                          className="global-rank-tag" 
-                          title={`อันดับที่ ${rank} ของโลกโดยมูลค่าตลาด`}
-                        >
-                          <i className="fa-solid fa-earth-americas"></i>
-                          อันดับ {rank}
-                        </span>
-                      );
-                    })()}
+
                   </div>
                 )}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
@@ -2592,36 +2542,36 @@ function UpdateModal({ stock, exchangeRate = 36.5, onClose, onUpdateSuccess }) {
               <div className="target-summary-ref" style={{ flexWrap: 'wrap', gap: '0.75rem 0.5rem' }}>
                 <div className="target-ref-card" style={{ minWidth: '100px', flex: '1 1 0' }}>
                   <span className="target-ref-label" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
-                    <i className="fa-solid fa-bullseye" style={{ color: '#3b82f6', fontSize: '0.75rem' }}></i>
                     <span>ราคาตั้งซื้อ</span>
+                    <i className="fa-solid fa-bullseye" style={{ color: targetPrice < 0 ? '#ef4444' : '#3b82f6', fontSize: '0.75rem' }}></i>
                   </span>
-                  <span className={`target-ref-value ${targetPrice === 0 ? 'text-grey' : ''}`} style={{ fontSize: '1rem' }}>${targetPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                  <span className={`target-ref-value ${targetPrice < 0 ? 'text-red' : targetPrice === 0 ? 'text-grey' : ''}`} style={{ fontSize: '1rem' }}>${targetPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                 </div>
                 <div className="target-summary-divider" style={{ margin: '0 0.5rem' }}></div>
                 <div className="target-ref-card" style={{ minWidth: '100px', flex: '1 1 0' }}>
                   <span className="target-ref-label" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
-                    <i className="fa-solid fa-bars-progress" style={{ color: '#f59e0b', fontSize: '0.75rem' }}></i>
                     <span>ยอดตั้งซื้อ</span>
+                    <i className="fa-solid fa-bars-progress" style={{ color: remainingTarget < 0 ? '#ef4444' : '#f59e0b', fontSize: '0.75rem' }}></i>
                   </span>
-                  <span className={`target-ref-value ${remainingTarget === 0 ? 'text-grey' : ''}`} style={{ fontSize: '1rem' }}>
+                  <span className={`target-ref-value ${remainingTarget < 0 ? 'text-red' : remainingTarget === 0 ? 'text-grey' : ''}`} style={{ fontSize: '1rem' }}>
                     ${remainingTarget.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                   </span>
                 </div>
                 <div className="target-summary-divider" style={{ margin: '0 0.5rem' }}></div>
                 <div className="target-ref-card" style={{ minWidth: '100px', flex: '1 1 0' }}>
                   <span className="target-ref-label" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
-                    <i className="fa-solid fa-filter" style={{ color: '#06b6d4', fontSize: '0.75rem' }}></i>
                     <span>ยอดตั้งกำจัด</span>
+                    <i className="fa-solid fa-filter" style={{ color: currentTargetClearAmount < 0 ? '#ef4444' : '#06b6d4', fontSize: '0.75rem' }}></i>
                   </span>
-                  <span className={`target-ref-value ${currentTargetClearAmount === 0 ? 'text-grey' : ''}`} style={{ fontSize: '1rem' }}>
+                  <span className={`target-ref-value ${currentTargetClearAmount < 0 ? 'text-red' : currentTargetClearAmount === 0 ? 'text-grey' : ''}`} style={{ fontSize: '1rem' }}>
                     ${currentTargetClearAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                   </span>
                 </div>
                 <div className="target-summary-divider" style={{ margin: '0 0.5rem' }}></div>
                 <div className="target-ref-card" style={{ minWidth: '100px', flex: '1 1 0' }}>
                   <span className="target-ref-label" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
-                    <i className="fa-solid fa-arrow-trend-up" style={{ color: '#14b8a6', fontSize: '0.75rem' }}></i>
                     <span>กำไรขาย</span>
+                    <i className="fa-solid fa-arrow-trend-up" style={{ color: currentTotalProfit < 0 ? '#ef4444' : '#14b8a6', fontSize: '0.75rem' }}></i>
                   </span>
                   <span className={`target-ref-value ${currentTotalProfit > 0 ? 'text-green' : currentTotalProfit < 0 ? 'text-red' : 'text-grey'}`} style={{ fontSize: '1rem' }}>
                     ${currentTotalProfit.toLocaleString(undefined, { minimumFractionDigits: 2 })}
@@ -2630,8 +2580,8 @@ function UpdateModal({ stock, exchangeRate = 36.5, onClose, onUpdateSuccess }) {
                 <div className="target-summary-divider" style={{ margin: '0 0.5rem' }}></div>
                 <div className="target-ref-card" style={{ minWidth: '100px', flex: '1 1 0' }}>
                   <span className="target-ref-label" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
-                    <i className="fa-solid fa-chart-line" style={{ color: '#059669', fontSize: '0.75rem' }}></i>
                     <span>กำไรรวม</span>
+                    <i className="fa-solid fa-chart-line" style={{ color: currentGrossProfit < 0 ? '#ef4444' : '#059669', fontSize: '0.75rem' }}></i>
                   </span>
                   <span className={`target-ref-value ${currentGrossProfit > 0 ? 'text-green' : currentGrossProfit < 0 ? 'text-red' : 'text-grey'}`} style={{ fontSize: '1rem' }}>
                     ${currentGrossProfit.toLocaleString(undefined, { minimumFractionDigits: 2 })}
@@ -2640,8 +2590,8 @@ function UpdateModal({ stock, exchangeRate = 36.5, onClose, onUpdateSuccess }) {
                 <div className="target-summary-divider" style={{ margin: '0 0.5rem' }}></div>
                 <div className="target-ref-card" style={{ minWidth: '100px', flex: '1 1 0' }}>
                   <span className="target-ref-label" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
-                    <i className="fa-solid fa-wallet" style={{ color: '#ec4899', fontSize: '0.75rem' }}></i>
                     <span>กำไรสุทธิ</span>
+                    <i className="fa-solid fa-wallet" style={{ color: currentNetIncome < 0 ? '#ef4444' : '#ec4899', fontSize: '0.75rem' }}></i>
                   </span>
                   <span className={`target-ref-value ${currentNetIncome > 0 ? 'text-green' : currentNetIncome < 0 ? 'text-red' : 'text-grey'}`} style={{ fontSize: '1rem' }}>
                     ${currentNetIncome.toLocaleString(undefined, { minimumFractionDigits: 2 })}
