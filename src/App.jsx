@@ -332,6 +332,13 @@ const statusOptions = [
   { value: "รอซื้อ", label: "รอซื้อ" }
 ];
 
+const shariahOptions = [
+  { value: "Halal", label: "Halal" },
+  { value: "Not Halal", label: "Not Halal" },
+  { value: "Doubtful", label: "Doubtful" },
+  { value: "Not Covered", label: "Not Covered" }
+];
+
 const sortSelectStyles = {
   control: (provided, state) => ({
     ...provided,
@@ -2005,6 +2012,7 @@ function UpdateModal({ stock, exchangeRate = 36.5, onClose, onUpdateSuccess }) {
       : (stock["clear_amount"] !== undefined && stock["clear_amount"] !== null ? stock["clear_amount"] : '');
   });
   const [stockStatus, setStockStatus] = useState(() => stock["สถานะ"] || '');
+  const [shariahCompliant, setShariahCompliant] = useState(() => stock["หลักชะรีอะฮ์"] || '');
   const [dividendRate, setDividendRate] = useState(() => {
     return stock["อัตราปันผล (%)"] !== undefined && stock["อัตราปันผล (%)"] !== null ? stock["อัตราปันผล (%)"] : '';
   });
@@ -2282,7 +2290,8 @@ function UpdateModal({ stock, exchangeRate = 36.5, onClose, onUpdateSuccess }) {
       tax_amount: getOrNull(taxAmount),
       clear_amount: getOrNull(clearAmount),
       dividend_rate: getOrNull(dividendRate),
-      clear_rate: getOrNull(clearRate)
+      clear_rate: getOrNull(clearRate),
+      shariah_compliant: shariahCompliant || null
     };
 
     try {
@@ -2641,6 +2650,21 @@ function UpdateModal({ stock, exchangeRate = 36.5, onClose, onUpdateSuccess }) {
               </div>
 
               <div className="form-grid-container">
+                <div className="form-group">
+                  <label className="form-label">หลักชะรีอะฮ์</label>
+                  <Select
+                    options={shariahOptions}
+                    value={shariahOptions.find(opt => opt.value === shariahCompliant) || null}
+                    onChange={(selected) => setShariahCompliant(selected ? selected.value : '')}
+                    placeholder="-- เลือก --"
+                    classNamePrefix="react-select"
+                    styles={statusSelectStyles}
+                    isSearchable={false}
+                    menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+                  />
+                  <span className="input-helper-text">ค่าเดิม: {stock["หลักชะรีอะฮ์"] || 'ไม่มี'}</span>
+                </div>
+
                 <div className="form-group">
                   <label className="form-label">สถานะ</label>
                   <Select
