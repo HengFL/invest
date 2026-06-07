@@ -37,10 +37,15 @@ invest/
 ---
 
 ## 3. รูปแบบการจัดเก็บโค้ด (Code Architecture Pattern)
-โปรเจคนี้ได้รับการพัฒนาในลักษณะ **Single File Core** สำหรับคอมโพเนนต์หลัก โดยมีโครงสร้างดังนี้:
+โปรเจคนี้ได้รับการพัฒนาในลักษณะ **Modular Component Architecture** แบบมาตรฐานของ React โดยมีโครงสร้างดังนี้:
 
-### A. การจัดการสถานะหลัก (State Management)
-ใน `src/App.jsx` ประกอบด้วยสถานะหลัก:
+### A. การแบ่งแยกหน้าที่ (Separation of Concerns)
+- `src/constants/`: จัดเก็บค่าคงที่ เช่น `API_URL`, ตัวเลือกสำหรับ Dropdown (`sortOptions`, `statusOptions`), การแบ่งหมวดหมู่พอร์ต (`PORT_CATEGORIES`) และสไตล์แบบกำหนดเองของ `react-select`
+- `src/utils/`: จัดเก็บฟังก์ชันตัวช่วย (Helper functions) ที่สามารถเรียกใช้งานซ้ำได้ เช่น การคำนวณตัวเลข (`numberUtils.js`), การจัดการวันที่ (`dateUtils.js`) และตรรกะการจัดเรียงข้อมูล (`sortUtils.js`)
+- `src/components/`: จัดเก็บคอมโพเนนต์ React ย่อยที่แยกออกมาจากหน้าที่หลัก เช่น `SummaryCard`, `StockCard`, `InteractiveTime`, `AssetCharts` และ `UpdateModal`
+
+### B. การจัดการสถานะหลัก (State Management)
+ใน `src/App.jsx` จะทำหน้าที่เป็น **Container Component** ซึ่งประกอบด้วยสถานะหลัก:
 - `data`: รายชื่อหุ้นทั้งหมดที่โหลดมาจาก Google Sheets
 - `loading` / `error`: การจัดการสถานะการโหลดข้อมูลและการแสดงข้อผิดพลาด
 - `selectedStock`: หุ้นที่ถูกเลือกเพื่อใช้ในการอัปเดตผ่าน Modal
@@ -49,23 +54,24 @@ invest/
 - `searchQuery`: ข้อความค้นหาหุ้นแบบเรียลไทม์
 - `sortBy` / `sortOrder`: ตัวเลือกการจัดเรียง (เช่น เรียงตามยอดซื้อ ยอดขาย ปันผล อายุการถือครอง)
 
-### B. สถาปัตยกรรมการประมวลผลข้อมูล (Data Processing Pipeline)
+### C. สถาปัตยกรรมการประมวลผลข้อมูล (Data Processing Pipeline)
 ข้อมูลในระบบจะถูกกรองและคำนวณผ่าน `useMemo` เสมอ เพื่อลด Overhead ในการประมวลผลซ้ำเมื่อมีการพิมพ์ค้นหาหรือเปลี่ยนการจัดเรียง:
 
 ```mermaid
 graph LR
     raw_data[1. data state] -->|PORT_CATEGORIES filter| mainTabData[2. mainTabData]
     mainTabData -->|searchQuery filter| filteredData[3. filteredData]
-    filteredData -->|sortBy/sortOrder sorting| sortedData[4. sortedData]
-    sortedData -->|Render| UI[5. StockCard / UI]
+    filteredData -->|sortData sorting| sortedData[4. sortedData]
+    sortedData -->|Render| UI[5. StockCard / AssetCharts UI]
 ```
 
-### C. การแบ่ง UI Components ย่อยใน `App.jsx`
-- `App`: หน้าจอหลัก จัดการการคำนวณ Dashboard, การจัดเรียง, การกรอง และการโหลดข้อมูล
-- `SummaryCard`: การ์ดแสดงผลสรุปตัวเลขบน Dashboard (รองรับสีตามประเภท เช่น สีเขียวเมื่อเป็นบวก, สีแดงเมื่อเป็นลบ หรือการแสดงผลแบบ Binary)
-- `InteractiveTime`: คอมโพเนนต์แสดงเวลาสัมพัทธ์ (เช่น `3 วันที่แล้ว`) และรองรับการกดเพื่อแสดงวันที่จริงแบบ Popover ด้านบน
-- `StockCard`: การ์ดแสดงรายละเอียดของหุ้นรายตัว เช่น Ticker, อัตราปันผล, มูลค่ารวม, ยอดตั้งซื้อ รวมถึงการคำนวณค่าสะสมเป้าหมายแบบไดนามิก
-- `UpdateModal`: หน้าต่างฟอร์มสำหรับแก้ไขยอดเงินและวันที่ซื้อขาย พร้อมสอดแทรก **เครื่องคิดเลขจำลอง (Calculator Popover)** ในทุกช่องที่เป็นอินพุตตัวเลขเพื่อเพิ่มความสะดวกในการใช้งาน
+### D. การแบ่ง UI Components ย่อย
+- `App.jsx`: หน้าจอหลัก จัดการการคำนวณ Dashboard, การจัดเรียง, การกรอง และการโหลดข้อมูล
+- `SummaryCard.jsx`: การ์ดแสดงผลสรุปตัวเลขบน Dashboard (รองรับสีตามประเภท เช่น สีเขียวเมื่อเป็นบวก, สีแดงเมื่อเป็นลบ หรือการแสดงผลแบบ Binary)
+- `InteractiveTime.jsx`: คอมโพเนนต์แสดงเวลาสัมพัทธ์ (เช่น `3 วันที่แล้ว`) และรองรับการกดเพื่อแสดงวันที่จริงแบบ Popover ด้านบน
+- `AssetCharts.jsx`: แสดงกราฟวงกลมสรุปสัดส่วนการลงทุนและมิติต่างๆ ของพอร์ต
+- `StockCard.jsx`: การ์ดแสดงรายละเอียดของหุ้นรายตัว เช่น Ticker, อัตราปันผล, มูลค่ารวม, ยอดตั้งซื้อ รวมถึงการคำนวณค่าสะสมเป้าหมายแบบไดนามิก
+- `UpdateModal.jsx`: หน้าต่างฟอร์มสำหรับแก้ไขยอดเงินและวันที่ซื้อขาย พร้อมสอดแทรก **เครื่องคิดเลขจำลอง (Calculator Popover)** ในทุกช่องที่เป็นอินพุตตัวเลขเพื่อเพิ่มความสะดวกในการใช้งาน
 
 ---
 
