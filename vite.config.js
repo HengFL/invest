@@ -5,6 +5,9 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   base: process.env.NODE_ENV === 'production' ? '/investment/' : '/',
   plugins: [react()],
+  optimizeDeps: {
+    include: ['apexcharts', 'react-apexcharts']
+  },
   server: {
     port: 3000,
   },

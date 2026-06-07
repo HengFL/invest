@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import ReactApexChart from 'react-apexcharts';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import Select from 'react-select';
@@ -518,6 +519,7 @@ function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('ลำดับที่');
   const [sortOrder, setSortOrder] = useState('asc'); // 'asc' | 'desc'
+  const [viewMode, setViewMode] = useState('list');
 
   const fetchData = async () => {
     setLoading(true);
@@ -1163,12 +1165,30 @@ function App() {
       </div>
 
       {/* List Controls: Sub Tabs & Search */}
-      <h2 className="section-title animate-fade-in" style={{ marginBottom: '0.5rem' }}>
-        <span>รายการสินทรัพย์</span>
-        {activeSubTab !== 'All' && (
-          <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--secondary)', background: 'rgba(219, 39, 119, 0.08)', padding: '0.15rem 0.5rem', borderRadius: '6px' }}>{activeSubTab}</span>
-        )}
-      </h2>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+        <h2 className="section-title animate-fade-in" style={{ margin: 0 }}>
+          <span>รายการสินทรัพย์</span>
+          {activeSubTab !== 'All' && (
+            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--secondary)', background: 'rgba(219, 39, 119, 0.08)', padding: '0.15rem 0.5rem', borderRadius: '6px', marginLeft: '0.5rem' }}>{activeSubTab}</span>
+          )}
+        </h2>
+        <div className="view-toggle-container glass-card" style={{ padding: '0.25rem', display: 'flex', gap: '0.25rem', borderRadius: '0.5rem', background: 'rgba(255, 255, 255, 0.5)' }}>
+          <button 
+            className={`view-toggle-btn ${viewMode === 'list' ? 'active' : ''}`}
+            onClick={() => setViewMode('list')}
+            title="List View"
+          >
+            <i className="fa-solid fa-list"></i>
+          </button>
+          <button 
+            className={`view-toggle-btn ${viewMode === 'chart' ? 'active' : ''}`}
+            onClick={() => setViewMode('chart')}
+            title="Chart View"
+          >
+            <i className="fa-solid fa-chart-pie"></i>
+          </button>
+        </div>
+      </div>
       <div className="list-controls-container">
         <div className="tabs-container">
           {/* Tab All at the very front */}
@@ -1247,14 +1267,17 @@ function App() {
         </div>
       </div>
 
-      {/* Stock List */}
-      <div className="stock-list">
+      {/* Stock List or Charts */}
+      <div className="stock-list-wrapper">
         {loading ? (
           <div style={{ textAlign: 'center', padding: '3rem' }}>
             <p className="text-muted">กำลังโหลดข้อมูล...</p>
           </div>
+        ) : viewMode === 'chart' ? (
+          <AssetCharts data={sortedData} />
         ) : (
-          <AnimatePresence mode="popLayout">
+          <div className="stock-list">
+            <AnimatePresence mode="popLayout">
             {sortedData.length > 0 ? (
               sortedData.map((stock, index) => (
                 <StockCard 
@@ -1292,6 +1315,7 @@ function App() {
               </div>
             )}
           </AnimatePresence>
+          </div>
         )}
       </div>
 
@@ -2874,6 +2898,147 @@ function UpdateModal({ stock, exchangeRate = 36.5, onClose, onUpdateSuccess }) {
         )}
       </motion.div>
     </div>
+  );
+}
+
+// --- Chart Utilities ---
+const COLORS = ['#6366f1', '#ec4899', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#f43f5e', '#14b8a6', '#f97316', '#0ea5e9'];
+
+function AssetCharts({ data }) {
+  if (!data || data.length === 0) {
+    return (
+      <div className="glass-card animate-fade-in" style={{ padding: '2.5rem 2rem', textAlign: 'center' }}>
+        <p className="text-muted">ไม่มีข้อมูลสำหรับแสดงกราฟ</p>
+      </div>
+    );
+  }
+
+  // Helpers to count frequencies
+  const countBy = (arr, keyFn) => {
+    return arr.reduce((acc, item) => {
+      const key = keyFn(item) || 'ไม่ระบุ';
+      acc[key] = (acc[key] || 0) + 1;
+      return acc;
+    }, {});
+  };
+
+  const toChartData = (counts) => {
+    return Object.keys(counts).map(key => ({ name: key, value: counts[key] })).sort((a, b) => b.value - a.value);
+  };
+
+  const safeParseNumber = (val) => {
+    if (val === undefined || val === null || val === '') return 0;
+    const num = parseFloat(String(val).replace(/[^0-9.-]/g, ''));
+    return isNaN(num) ? 0 : num;
+  };
+
+  // Aggregations
+  const chartData = {
+    port: toChartData(countBy(data, d => d['port'])),
+    shariah: toChartData(countBy(data, d => d['หลักชะรีอะฮ์'])),
+    status: toChartData(countBy(data, d => d['สถานะ'])),
+    market: toChartData(countBy(data, d => d['ตลาด'])),
+    sector: toChartData(countBy(data, d => d['หมวดธุรกิจ'])),
+    industry: toChartData(countBy(data, d => d['อุตสาหกรรม']))
+  };
+
+  const renderDonutChart = (title, dataKey, iconClass, colorMode) => {
+    const series = chartData[dataKey].map(d => d.value);
+    const labels = chartData[dataKey].map(d => d.name);
+    const total = series.reduce((acc, val) => acc + val, 0);
+
+    const options = {
+      chart: {
+        type: 'donut',
+        fontFamily: "'Outfit', 'Sarabun', sans-serif",
+        background: 'transparent',
+        animations: { enabled: true }
+      },
+      labels: labels,
+      colors: COLORS,
+      stroke: {
+        colors: ['#ffffff'],
+        width: 1
+      },
+      dataLabels: {
+        enabled: true,
+        formatter: function (val) {
+          return val.toFixed(1) + '%';
+        },
+        dropShadow: {
+          enabled: false
+        },
+        style: {
+          fontSize: '10px',
+          fontFamily: "'Outfit', 'Sarabun', sans-serif",
+          fontWeight: 600
+        }
+      },
+      legend: {
+        show: false
+      },
+      plotOptions: {
+        pie: {
+          donut: {
+            size: '65%'
+          }
+        }
+      },
+      tooltip: {
+        theme: 'light'
+      }
+    };
+
+    return (
+      <div className="glass-card" style={{ padding: '1.25rem', height: '320px', display: 'flex', flexDirection: 'column' }}>
+        <h3 style={{ fontSize: '0.9rem', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-main)' }}>
+          <div style={{ background: 'rgba(99, 102, 241, 0.1)', padding: '4px 6px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <i className={`fa-solid ${iconClass}`} style={{ fontSize: '12px', color: '#6366f1' }}></i>
+          </div>
+          {title}
+        </h3>
+        <div style={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'center' }}>
+          {/* Chart Left (60%) */}
+          <div style={{ width: '60%', height: '100%', position: 'relative' }}>
+            <ReactApexChart options={options} series={series} type="donut" height="100%" />
+          </div>
+          {/* Labels Right (40%) */}
+          <div className="chart-custom-legend" style={{ width: '40%', height: '100%', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.625rem', paddingLeft: '0.75rem', borderLeft: '1px solid rgba(0,0,0,0.05)' }}>
+            {chartData[dataKey].map((d, index) => (
+              <div key={index} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.75rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', overflow: 'hidden' }}>
+                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: COLORS[index % COLORS.length], flexShrink: 0 }}></div>
+                  <span style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={d.name}>{d.name}</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', flexShrink: 0, marginLeft: '0.25rem' }}>
+                  <span style={{ fontWeight: 700, color: 'var(--text-main)' }}>{d.value}</span>
+                  {total > 0 && (
+                    <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{((d.value / total) * 100).toFixed(1)}%</span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <motion.div 
+      className="charts-grid animate-fade-in"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem' }}
+    >
+      {renderDonutChart('พอร์ต', 'port', 'fa-briefcase')}
+      {renderDonutChart('สถานะ', 'status', 'fa-signal')}
+      {renderDonutChart('หลักชะรีอะฮ์', 'shariah', 'fa-scale-balanced')}
+      {renderDonutChart('ตลาด', 'market', 'fa-globe')}
+      {renderDonutChart('หมวดธุรกิจ', 'sector', 'fa-building')}
+      {renderDonutChart('อุตสาหกรรม', 'industry', 'fa-industry')}
+    </motion.div>
   );
 }
 

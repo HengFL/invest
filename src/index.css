@@ -712,6 +712,37 @@ h1 {
   transform: scale(0.95);
 }
 
+/* View Toggle Button */
+.view-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.45rem;
+  aspect-ratio: 1 / 1;
+  border-radius: 0.5rem;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.view-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.5);
+  color: var(--text-main);
+}
+
+.view-toggle-btn.active {
+  background: white;
+  color: var(--primary);
+  border-color: rgba(99, 102, 241, 0.3);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.view-toggle-btn:active {
+  transform: scale(0.95);
+}
+
 /* Animations */
 @keyframes spin {
   from { transform: rotate(0deg); }
@@ -1682,3 +1713,6 @@ h1 {
 .global-rank-tag i {
   font-size: 0.7rem;
 }
+
+.chart-custom-legend::-webkit-scrollbar { display: none; }
+.chart-custom-legend { scrollbar-width: none; }
