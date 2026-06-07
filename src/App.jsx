@@ -2922,6 +2922,17 @@ function AssetCharts({ data }) {
     }, {});
   };
 
+  const sumBy = (arr, valueFn) => {
+    return arr.reduce((acc, item) => {
+      const key = item["ชื่อหุ้น"] || 'ไม่ระบุ';
+      const val = valueFn(item);
+      if (val > 0) {
+        acc[key] = (acc[key] || 0) + val;
+      }
+      return acc;
+    }, {});
+  };
+
   const toChartData = (counts) => {
     return Object.keys(counts).map(key => ({ name: key, value: counts[key] })).sort((a, b) => b.value - a.value);
   };
@@ -2939,10 +2950,60 @@ function AssetCharts({ data }) {
     status: toChartData(countBy(data, d => d['สถานะ'])),
     market: toChartData(countBy(data, d => d['ตลาด'])),
     sector: toChartData(countBy(data, d => d['หมวดธุรกิจ'])),
-    industry: toChartData(countBy(data, d => d['อุตสาหกรรม']))
+    industry: toChartData(countBy(data, d => d['อุตสาหกรรม'])),
+    targetBuyAmount: toChartData(sumBy(data, d => {
+      const targetPrice = parseNumber(d["ราคาตั้งซื้อ ($)"]);
+      if (d.port === 'Trade' || targetPrice <= 0) return 0;
+      const targetAmount = calculateTargetAmount(d["วันที่กำหนด"], d["ราคาตั้งซื้อ ($)"]);
+      return targetAmount - parseNumber(d["ยอดซื้อ ($)"]) + parseNumber(d["ยอดขาย ($)"]);
+    })),
+    targetClearAmount: toChartData(sumBy(data, d => {
+      const dividendAmount = parseNumber(d["ยอดปันผล ($)"]);
+      const taxAmount = parseNumber(d["ภาษีปันผล ($)"] || d["ภาษี ($)"] || d["ยอดภาษี ($)"] || 0);
+      const clearRateVal = parseFloat(d["อัตรากำจัด (%)"]) || parseFloat(d["clear_rate"]) || 0;
+      const clearAmountVal = parseNumber(d["ยอดกำจัด ($)"] || d["clear_amount"] || 0);
+      return (dividendAmount - taxAmount) * (clearRateVal / 100) - clearAmountVal;
+    })),
+    buyAmount: toChartData(sumBy(data, d => parseNumber(d["ยอดซื้อ ($)"]))),
+    sellAmount: toChartData(sumBy(data, d => parseNumber(d["ยอดขาย ($)"]))),
+    dividendAmount: toChartData(sumBy(data, d => parseNumber(d["ยอดปันผล ($)"]))),
+    taxAmount: toChartData(sumBy(data, d => parseNumber(d["ภาษีปันผล ($)"] || d["ภาษี ($)"] || d["ยอดภาษี ($)"]))),
+    clearAmount: toChartData(sumBy(data, d => parseNumber(d["ยอดกำจัด ($)"] || d["clear_amount"]))),
+    profitAmount: toChartData(sumBy(data, d => {
+      return (d["สถานะ"] === "ขายแล้ว" || d["สถานะ"] === "รอซื้อ")
+        ? parseNumber(d["ยอดขาย ($)"]) - parseNumber(d["ยอดซื้อ ($)"])
+        : 0;
+    })),
+    grossProfitAmount: toChartData(sumBy(data, d => {
+      const profit = (d["สถานะ"] === "ขายแล้ว" || d["สถานะ"] === "รอซื้อ")
+        ? parseNumber(d["ยอดขาย ($)"]) - parseNumber(d["ยอดซื้อ ($)"])
+        : 0;
+      return profit + parseNumber(d["ยอดปันผล ($)"]);
+    })),
+    netIncomeAmount: toChartData(sumBy(data, d => {
+      const profit = (d["สถานะ"] === "ขายแล้ว" || d["สถานะ"] === "รอซื้อ")
+        ? parseNumber(d["ยอดขาย ($)"]) - parseNumber(d["ยอดซื้อ ($)"])
+        : 0;
+      const dividend = parseNumber(d["ยอดปันผล ($)"]);
+      const tax = parseNumber(d["ภาษีปันผล ($)"] || d["ภาษี ($)"] || d["ยอดภาษี ($)"]);
+      const clearAmount = parseNumber(d["ยอดกำจัด ($)"] || d["clear_amount"]);
+      return profit + (dividend - tax) - clearAmount;
+    }))
   };
 
-  const renderDonutChart = (title, dataKey, iconClass, colorMode) => {
+  const renderDonutChart = (title, dataKey, iconClass, isMoney = false) => {
+    if (!chartData[dataKey] || chartData[dataKey].length === 0) {
+      return (
+        <div className="glass-card" style={{ padding: '1.25rem', height: '320px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+          <div style={{ background: 'rgba(148, 163, 184, 0.1)', padding: '12px', borderRadius: '50%', marginBottom: '1rem' }}>
+            <i className={`fa-solid ${iconClass}`} style={{ fontSize: '24px', color: '#94a3b8' }}></i>
+          </div>
+          <h3 style={{ fontSize: '1rem', color: 'var(--text-main)', marginBottom: '0.5rem' }}>{title}</h3>
+          <p className="text-muted" style={{ fontSize: '0.85rem' }}>ไม่มีข้อมูล</p>
+        </div>
+      );
+    }
+
     const series = chartData[dataKey].map(d => d.value);
     const labels = chartData[dataKey].map(d => d.name);
     const total = series.reduce((acc, val) => acc + val, 0);
@@ -2985,7 +3046,12 @@ function AssetCharts({ data }) {
         }
       },
       tooltip: {
-        theme: 'light'
+        theme: 'light',
+        y: {
+          formatter: function(val) {
+            return isMoney ? `$${val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : val;
+          }
+        }
       }
     };
 
@@ -3011,7 +3077,9 @@ function AssetCharts({ data }) {
                   <span style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={d.name}>{d.name}</span>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', flexShrink: 0, marginLeft: '0.25rem' }}>
-                  <span style={{ fontWeight: 700, color: 'var(--text-main)' }}>{d.value}</span>
+                  <span style={{ fontWeight: 700, color: 'var(--text-main)' }}>
+                    {isMoney ? `$${d.value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : d.value}
+                  </span>
                   {total > 0 && (
                     <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{((d.value / total) * 100).toFixed(1)}%</span>
                   )}
@@ -3038,6 +3106,16 @@ function AssetCharts({ data }) {
       {renderDonutChart('ตลาด', 'market', 'fa-globe')}
       {renderDonutChart('หมวดธุรกิจ', 'sector', 'fa-building')}
       {renderDonutChart('อุตสาหกรรม', 'industry', 'fa-industry')}
+      {renderDonutChart('ยอดตั้งซื้อ', 'targetBuyAmount', 'fa-bars-progress', true)}
+      {renderDonutChart('ยอดตั้งกำจัด', 'targetClearAmount', 'fa-filter', true)}
+      {renderDonutChart('ยอดซื้อ', 'buyAmount', 'fa-cart-shopping', true)}
+      {renderDonutChart('ยอดขาย', 'sellAmount', 'fa-hand-holding-dollar', true)}
+      {renderDonutChart('ยอดปันผล', 'dividendAmount', 'fa-coins', true)}
+      {renderDonutChart('ยอดภาษี', 'taxAmount', 'fa-file-invoice-dollar', true)}
+      {renderDonutChart('ยอดกำจัด', 'clearAmount', 'fa-scissors', true)}
+      {renderDonutChart('กำไรขาย', 'profitAmount', 'fa-arrow-trend-up', true)}
+      {renderDonutChart('กำไรรวม', 'grossProfitAmount', 'fa-chart-line', true)}
+      {renderDonutChart('กำไรสุทธิ', 'netIncomeAmount', 'fa-wallet', true)}
     </motion.div>
   );
 }
