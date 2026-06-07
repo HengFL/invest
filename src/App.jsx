@@ -2926,15 +2926,16 @@ function AssetCharts({ data }) {
     return arr.reduce((acc, item) => {
       const key = item["ชื่อหุ้น"] || 'ไม่ระบุ';
       const val = valueFn(item);
-      if (val > 0) {
-        acc[key] = (acc[key] || 0) + val;
-      }
+      acc[key] = (acc[key] || 0) + val;
       return acc;
     }, {});
   };
 
   const toChartData = (counts) => {
-    return Object.keys(counts).map(key => ({ name: key, value: counts[key] })).sort((a, b) => b.value - a.value);
+    return Object.keys(counts)
+      .map(key => ({ name: key, value: counts[key] }))
+      .filter(d => d.value !== 0)
+      .sort((a, b) => b.value - a.value);
   };
 
   const safeParseNumber = (val) => {
@@ -2951,6 +2952,8 @@ function AssetCharts({ data }) {
     market: toChartData(countBy(data, d => d['ตลาด'])),
     sector: toChartData(countBy(data, d => d['หมวดธุรกิจ'])),
     industry: toChartData(countBy(data, d => d['อุตสาหกรรม'])),
+    marketValue: toChartData(sumBy(data, d => parseNumber(d["มูลค่าตลาด ($)"]))),
+    stockPrice: toChartData(sumBy(data, d => parseNumber(d["ราคาหุ้น ($)"]))),
     targetBuyAmount: toChartData(sumBy(data, d => {
       const targetPrice = parseNumber(d["ราคาตั้งซื้อ ($)"]);
       if (d.port === 'Trade' || targetPrice <= 0) return 0;
@@ -2991,7 +2994,7 @@ function AssetCharts({ data }) {
     }))
   };
 
-  const renderDonutChart = (title, dataKey, iconClass, isMoney = false) => {
+  const renderDonutChart = (title, dataKey, iconClass, isMoney = false, useShortFormat = false) => {
     if (!chartData[dataKey] || chartData[dataKey].length === 0) {
       return (
         <div className="glass-card" style={{ padding: '1.25rem', height: '320px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
@@ -3004,7 +3007,7 @@ function AssetCharts({ data }) {
       );
     }
 
-    const series = chartData[dataKey].map(d => d.value);
+    const series = chartData[dataKey].map(d => Math.abs(d.value));
     const labels = chartData[dataKey].map(d => d.name);
     const total = series.reduce((acc, val) => acc + val, 0);
 
@@ -3041,15 +3044,58 @@ function AssetCharts({ data }) {
       plotOptions: {
         pie: {
           donut: {
-            size: '65%'
+            size: '65%',
+            labels: {
+              show: true,
+              name: {
+                show: true,
+                fontSize: '12px',
+                fontFamily: "'Outfit', 'Sarabun', sans-serif",
+                color: 'var(--text-muted)'
+              },
+              value: {
+                show: true,
+                fontSize: '16px',
+                fontFamily: "'Outfit', 'Sarabun', sans-serif",
+                fontWeight: 700,
+                color: 'var(--text-main)',
+                formatter: function (val, opts) {
+                  const originalVal = opts?.seriesIndex !== undefined && chartData[dataKey][opts.seriesIndex] 
+                    ? chartData[dataKey][opts.seriesIndex].value 
+                    : Number(val);
+                  return isMoney 
+                    ? (useShortFormat ? formatCurrency(originalVal) : `$${originalVal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`)
+                    : originalVal.toLocaleString();
+                }
+              },
+              total: {
+                show: true,
+                showAlways: true,
+                label: '',
+                fontSize: '12px',
+                fontFamily: "'Outfit', 'Sarabun', sans-serif",
+                color: 'var(--text-muted)',
+                formatter: function (w) {
+                  const actualTotal = chartData[dataKey].reduce((acc, d) => acc + d.value, 0);
+                  return isMoney 
+                    ? (useShortFormat ? formatCurrency(actualTotal) : `$${actualTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`)
+                    : actualTotal.toLocaleString();
+                }
+              }
+            }
           }
         }
       },
       tooltip: {
         theme: 'light',
         y: {
-          formatter: function(val) {
-            return isMoney ? `$${val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : val;
+          formatter: function(val, opts) {
+            const originalVal = opts?.seriesIndex !== undefined && chartData[dataKey][opts.seriesIndex] 
+              ? chartData[dataKey][opts.seriesIndex].value 
+              : val;
+            return isMoney 
+              ? (useShortFormat ? formatCurrency(originalVal) : `$${originalVal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`) 
+              : originalVal;
           }
         }
       }
@@ -3078,10 +3124,10 @@ function AssetCharts({ data }) {
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', flexShrink: 0, marginLeft: '0.25rem' }}>
                   <span style={{ fontWeight: 700, color: 'var(--text-main)' }}>
-                    {isMoney ? `$${d.value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : d.value}
+                    {isMoney ? (useShortFormat ? formatCurrency(d.value) : `$${d.value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`) : d.value}
                   </span>
                   {total > 0 && (
-                    <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{((d.value / total) * 100).toFixed(1)}%</span>
+                    <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{((Math.abs(d.value) / total) * 100).toFixed(1)}%</span>
                   )}
                 </div>
               </div>
@@ -3106,6 +3152,8 @@ function AssetCharts({ data }) {
       {renderDonutChart('ตลาด', 'market', 'fa-globe')}
       {renderDonutChart('หมวดธุรกิจ', 'sector', 'fa-building')}
       {renderDonutChart('อุตสาหกรรม', 'industry', 'fa-industry')}
+      {renderDonutChart('มูลค่าตลาด', 'marketValue', 'fa-sack-dollar', true, true)}
+      {renderDonutChart('ราคาหุ้น', 'stockPrice', 'fa-money-bill-trend-up', true)}
       {renderDonutChart('ยอดตั้งซื้อ', 'targetBuyAmount', 'fa-bars-progress', true)}
       {renderDonutChart('ยอดตั้งกำจัด', 'targetClearAmount', 'fa-filter', true)}
       {renderDonutChart('ยอดซื้อ', 'buyAmount', 'fa-cart-shopping', true)}
